@@ -1,0 +1,86 @@
+#!/usr/bin/env bash
+
+# Validate that the project coordinate values contained in usage-guide.md are correct.
+
+main() {
+  init
+  #echo "git hook '${SCRIPT_NAME}' running... (validating that the project coordinate values contained in usage-guide.md are correct)"
+  validate-mvn-archetype-generate-parameters
+  report-all-errors
+  exit-with-error-code-if-any-errors-occurred
+}
+
+init()  {
+  SCRIPT_NAME=`basename "$0"`
+  ERROR_CODES=()
+  ERROR_MESSAGES=()
+  get-pom-project-version-from-staged-pom
+}
+
+get-pom-project-version-from-staged-pom() {
+  mkdir -p target/ >/dev/null 2>&1
+  git show :pom.xml > target/pom-staged.xml
+  POM_PROJECT_VERSION=$(mvn help:evaluate -Dexpression=project.version --quiet --file=target/pom-staged.xml -DforceStdout 2> /dev/null)
+}
+
+validate-mvn-archetype-generate-parameters() {
+  validate-mvn-archetype-generate-parameters-for-non-interactive-mode-command
+}
+
+validate-mvn-archetype-generate-parameters-for-non-interactive-mode-command() {
+  git show :usage-guide.md \
+  | transform-text-to-allow-text-matching-on-documented-multiline-commands \
+  | grep 'mvn archetype:generate -DinteractiveMode=false -DarchetypeGroupId=io.github.adrianjuhl.archetype -DarchetypeArtifactId=simple-springboot-camel-application-archetype -DarchetypeVersion='"${POM_PROJECT_VERSION}"' -DgroupId=com.example' >/dev/null 2>&1
+  RESULT=$?
+  if [ ${RESULT} -ne 0 ]; then
+    ERROR_MESSAGE=`cat <<'    EOF' | sed -r 's/^ {8}//'
+          The content of the staged copy of usage-guide.md is not valid.
+          The version value used for the -DarchetypeVersion parameter of the example 'mvn archetype:generate' command (non-interactive mode) must be the same version value as is in pom.xml.
+          Review with: git show :usage-guide.md    or    git diff --staged usage-guide.md
+    EOF`
+    ERROR_MESSAGES+=("${ERROR_MESSAGE}")
+    ERROR_CODES+=(42)
+  fi
+}
+
+report-all-errors() {
+  for message in "${ERROR_MESSAGES[@]}"; do
+    echo "[ERROR] git hook '${SCRIPT_NAME}' found the following error:"
+    echo "${message}"
+  done
+  for code in "${ERROR_CODES[@]}"; do
+    echo "[ERROR_CODE] ${code}"
+  done
+}
+
+exit-with-error-code-if-any-errors-occurred() {
+  # If any error code isn't 0, exit with that error code.
+  for ERROR_CODE in "${ERROR_CODES[@]}"; do
+    [ "${ERROR_CODE}" == 0 ] || { echo "[ERROR] git hook '${SCRIPT_NAME}' found the above error(s) - exiting with error code ${ERROR_CODE}" && exit ${ERROR_CODE}; }
+  done
+}
+
+transform-text-to-allow-text-matching-on-documented-multiline-commands() {
+  translate-new-line-character-to-ascii-bell-character \
+  | strip-character-pairs-of-backslash-character-followed-by-ascii-bell-character \
+  | replace-multiple-consecutive-space-characters-with-single-space-character \
+  | translate-ascii-bell-character-to-new-line-character
+}
+
+translate-new-line-character-to-ascii-bell-character() {
+  tr '\n' '\a'
+}
+
+strip-character-pairs-of-backslash-character-followed-by-ascii-bell-character() {
+  sed 's/\\\a//g'
+}
+
+replace-multiple-consecutive-space-characters-with-single-space-character() {
+  sed 's/ \{1,\}/ /g'
+}
+
+translate-ascii-bell-character-to-new-line-character() {
+  tr '\a' '\n'
+}
+
+main "$@"

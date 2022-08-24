@@ -1,0 +1,103 @@
+#!/usr/bin/env bash
+
+# Generate a project using the simple-springboot-camel-application-archetype archetype.
+#
+# Usage example:
+# bash generate-project \
+#    --groupId au.edu.adelaide.integration.domain.subdomain \
+#    --artifactId my-integration-thing \
+#    --name "My Integration Thing" \
+#    --description "Some description"
+
+function usage
+{
+  echo "Usage: bash generate-project --groupId <group-id> --artifactId <artifact-id> [--version <version>] [--name \"<name>\"] [--description \"<description>\"]"
+  echo
+  echo "Required:"
+  echo "  --groupId <group-id>         the groupId for the generated project"
+  echo "  --artifactId <artifact-id>   the artifactId for the generated project"
+  echo
+  echo "Optional:"
+  echo "  --version <version>          the version for the generated project, optional, defaults to ${default-generated-project-version}"
+  echo "  --name <name>                the name for the generated project, optional,"
+  echo "                               the value goes in project.name in pom.xml, defaults to \"${default-generated-project-name}\""
+  echo "  --description <description>  the description for the generated project, optional,"
+  echo "                               the value goes in project.description in pom.xml, defaults to \"${default-generated-project-description}\""
+  echo "  --url <url>                  the URL for the generated project, optional,"
+  echo "                               the value goes in project.url in pom.xml, defaults to \"${default-generated-project-url}\""
+}
+
+groupId=
+artifactId=
+version=
+name=
+description=
+
+while [ "$1" != "" ]; do
+  case $1 in
+    --groupId )                        shift
+                                       groupId=$1
+                                       ;;
+    --artifactId )                     shift
+                                       artifactId=$1
+                                       ;;
+    --version )                        shift
+                                       version=$1
+                                       ;;
+    --name )                           shift
+                                       name=$1
+                                       ;;
+    --description )                    shift
+                                       description=$1
+                                       ;;
+    --url )                            shift
+                                       url=$1
+                                       ;;
+    --help )                           usage
+                                       exit
+                                       ;;
+    * )                                echo "Error: unknown option $1"
+                                       usage
+                                       exit 1
+  esac
+  shift
+done
+
+# Check that all required options were provided
+if [ -z "$groupId" ]; then
+  echo "ERROR: option --groupId was not provided"
+  usage
+  exit 1
+fi
+if [ -z "$artifactId" ]; then
+  echo "ERROR: option --artifactId was not provided"
+  usage
+  exit 1
+fi
+
+package=\${groupId}.`echo \${artifactId} | sed s/-/_/g`
+
+echo
+echo "Generating the project..."
+echo
+echo "  Using the following parameters:"
+echo "    groupId:                  \${groupId}"
+echo "    artifactId:               \${artifactId}"
+echo "    version:                  \${version}"
+echo "    package:                  \${package}"
+echo "    name:                     \${name}"
+echo "    description:              \${description}"
+echo "    url:                      \${url}"
+echo
+mvn archetype:generate \
+  -DinteractiveMode=false \
+  -DarchetypeGroupId=${groupId} \
+  -DarchetypeArtifactId=${artifactId} \
+  -DarchetypeVersion=${version} \
+  -DgroupId=\${groupId} \
+  -DartifactId=\${artifactId} \
+  -Dversion=\${version} \
+  -Dpackage=\${package} \
+  -Dname="\${name}" \
+  -Ddescription="\${description}" \
+  -Durl="\${url}"

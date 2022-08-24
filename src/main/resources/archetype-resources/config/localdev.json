@@ -1,0 +1,9 @@
+{
+  "camel.context.shutdown.timeout":10,
+  "camel.springboot.stream-caching-enabled":"true",
+  "camel.springboot.stream-caching-spool-threshold":"-1",
+  "cxf.path":"/api",
+  "logging.level.root":"INFO",
+  "logging.level.${package}":"TRACE",
+  "spring.main.banner-mode":"off"
+}

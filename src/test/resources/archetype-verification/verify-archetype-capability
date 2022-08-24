@@ -1,0 +1,121 @@
+#!/usr/bin/env bash
+
+# This script helps to verify that this archetype can generate a project that matches the prototype
+# in both structure and content.
+
+main() {
+  set -e
+  init
+  generate-prototype-project
+  clone-prototype-project
+  set +e
+  report-differences
+}
+
+init() {
+  # PROTOTYPE_VERSION_TARGET - the semver version identifier of the prototype project that the current development
+  # cycle of this archetype project is targeting.
+  # Set to the version of this archetype project excluding the -SNAPSHOT suffix.
+  # (The versions of each project remain in sync, apart from a -SNAPSHOT suffix during a development cycle.)
+  # The prototype project must have a tag or branch with this name. (Typically, that is, after an improvement has been
+  # introduced to the prototype and the release cycle for that change is complete, this will be a release tag. However,
+  # if there is a need to do development in both the prototype and archetype projects in parallel, an additional
+  # temporary branch can be added to the prototype project, with its name being this semver version number (that is,
+  # the additional branch will be name like 1.2.3) and which points to the same commit as the feature branch where
+  # development of the prototype is ocuring.)
+  PROTOTYPE_VERSION_TARGET=${parsedVersion.majorVersion}.${parsedVersion.minorVersion}.${parsedVersion.incrementalVersion}
+  # The directory path to this script. (This will be during at build time, when the script is being run from within the
+  # project build directory, i.e. with the target/ directory.)
+  # See https://stackoverflow.com/a/246128 for details of this command line.
+  SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
+  # Re-create the working directories.
+  rm --recursive --force ${project.build.directory}/archetype-verification/
+  mkdir --parents ${project.build.directory}/archetype-verification/generated/
+  mkdir --parents ${project.build.directory}/archetype-verification/cloned/
+}
+
+generate-prototype-project() {
+  # Generate a project using the simple-springboot-camel-application-archetype with parameter values such that
+  # the generated project should match the simple-springboot-camel-prototype project in both structure and
+  # content.
+  cd ${project.build.directory}/archetype-verification/generated/
+  bash ${project.build.directory}/classes/generate-project \
+      --groupId io.github.adrianjuhl.archetype \
+      --artifactId simple-springboot-camel-application-prototype \
+      --version ${PROTOTYPE_VERSION_TARGET} \
+      --name "Simple Springboot Camel Application Prototype" \
+      --description "A springboot camel application that helps with the development of the springboot camel archetype." \
+      --url "https://github.com/adrianjuhl/adrianjuhl-maven-simple-springboot-camel-application-prototype"
+}
+
+clone-prototype-project() {
+  cd ${project.build.directory}/archetype-verification/cloned/
+  git clone git@github.com:adrianjuhl/adrianjuhl-maven-simple-springboot-camel-application-prototype.git
+  cd ${project.build.directory}/archetype-verification/cloned/adrianjuhl-maven-simple-springboot-camel-application-prototype/
+  git checkout ${PROTOTYPE_VERSION_TARGET}
+
+  # Modify the cloned prototype pom.xml to translate some sections to be the same as what is generated.
+  # <inceptionYear> element:
+  sed 's~<inceptionYear>2022</inceptionYear>~<!--  <inceptionYear>YYYY</inceptionYear> -->~' pom.xml > pom.xml_modified
+  mv pom.xml_modified pom.xml
+
+  # <licenses> section:
+  awk '/<licenses>/ {f=1} !f; /<\/licenses>/ {print "  <!--  <licenses>\n          <license>\n            <name>licence name, e.g.: MIT License</name>\n            <url>licence url, e.g.: http://www.opensource.org/licenses/mit-license.php</url>\n          </license>\n        </licenses> -->"; f=0}' pom.xml > pom.xml_modified
+  mv pom.xml_modified pom.xml
+
+  # <developers> section:
+  awk '/<developers>/ {f=1} !f; /<\/developers>/ {print "  <!--  <developers>\n          <developer>\n            <id>1</id>\n            <name>developer name</name>\n            <email>developer email address, e.g.: developer-name@gmail.com</email>\n            <url>developer url, e.g.: https://github.com/developer-name</url>\n            <roles>\n              <role>developer role, e.g.: Developer</role>\n            </roles>\n            <timezone>developer timezone, e.g.: Australia/Adelaide</timezone>\n          </developer>\n        </developers> -->"; f=0}' pom.xml > pom.xml_modified
+  mv pom.xml_modified pom.xml
+
+  # <scm> section:
+  awk '/<scm>/ {f=1} !f; /<\/scm>/ {print "  <!--  <scm>\n          <connection>scm:git:github.com:example-user/example-repo.git</connection>\n          <developerConnection>scm:git:github.com:example-user/example-repo.git</developerConnection>\n          <url>https://github.com/example-user/example-repo</url>\n        </scm> -->"; f=0}' pom.xml > pom.xml_modified
+  mv pom.xml_modified pom.xml
+
+  # <distributionManagement> section:
+  awk '/<distributionManagement>/ {f=1} !f; /<\/distributionManagement>/ {print "  <!--  <distributionManagement>\n          <snapshotRepository>\n            <id>ossrh</id>\n            <url>https://s01.oss.sonatype.org/content/repositories/snapshots/</url>\n          </snapshotRepository>\n          <repository>\n            <id>ossrh</id>\n            <url>https://s01.oss.sonatype.org/service/local/staging/deploy/maven2/</url>\n          </repository>\n        </distributionManagement> -->"; f=0}' pom.xml > pom.xml_modified
+  mv pom.xml_modified pom.xml
+}
+
+report-differences() {
+  # Report differences between the generated project and the clone of simple-springboot-camel-prototype.
+  # The aim is to have no differences between the generated project and the prototype.
+  cd ${project.build.directory}/archetype-verification/
+  echo
+  echo
+  echo ">>>>>>>>>> DIFF REPORT BEGIN <<<<<<<<<<"
+  echo
+  echo "Diff summary (names of files that differ):"
+  diff \
+      --recursive \
+      --brief \
+      --exclude-from=${SCRIPT_DIR}/verify-archetype-capability-diff-exclude \
+    generated/simple-springboot-camel-application-prototype/ \
+    cloned/adrianjuhl-maven-simple-springboot-camel-application-prototype/
+  diff \
+      --brief \
+      generated/simple-springboot-camel-application-prototype/README.md \
+      cloned/adrianjuhl-maven-simple-springboot-camel-application-prototype/README-for-archetype-generate-testing.md
+  echo
+  echo "File content differences:"
+  diff \
+      --recursive \
+      --exclude-from=${SCRIPT_DIR}/verify-archetype-capability-diff-exclude \
+      generated/simple-springboot-camel-application-prototype/ \
+      cloned/adrianjuhl-maven-simple-springboot-camel-application-prototype/
+  echo
+  echo "Content differences between generated README.md and cloned README-for-archetype-generate-testing.md:"
+  diff \
+      generated/simple-springboot-camel-application-prototype/README.md \
+      cloned/adrianjuhl-maven-simple-springboot-camel-application-prototype/README-for-archetype-generate-testing.md
+  echo
+  echo "Specific file permission issues:"
+  if [ $(stat -c "%a" "generated/simple-springboot-camel-application-prototype/bin/run-app-localdev.sh") -ne "700" ]; then
+    echo "File permissions for generated/simple-springboot-camel-application-prototype/bin/run-app-localdev.sh is incorrect. Should be 700"
+  fi
+  echo
+  echo ">>>>>>>>>>> DIFF REPORT END <<<<<<<<<<<"
+  echo "Reported differences highlight where the archetype generation doesn't meet the requirements (as defined by the structure and content of the prototype)."
+  echo "The aim is for no differences to be reported."
+}
+
+main "$@"

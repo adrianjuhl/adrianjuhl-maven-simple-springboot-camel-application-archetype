@@ -1,0 +1,140 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <parent>
+    <groupId>io.github.adrianjuhl</groupId>
+    <artifactId>adrianjuhl-parent</artifactId>
+    <version>1.1.0-SNAPSHOT</version>
+  </parent>
+
+  <groupId>io.github.adrianjuhl.archetype</groupId>
+  <artifactId>simple-springboot-camel-application-archetype</artifactId>
+  <version>0.0.1-SNAPSHOT</version>
+  <packaging>maven-archetype</packaging>
+
+  <name>Simple Springboot Camel Application Archetype</name>
+  <description>Archetype for generating a simple springboot camel application project</description>
+  <url>https://github.com/adrianjuhl/adrianjuhl-maven-simple-springboot-camel-application-archetype</url>
+  <inceptionYear>2022</inceptionYear>
+
+  <licenses>
+    <license>
+      <name>MIT License</name>
+      <url>http://www.opensource.org/licenses/mit-license.php</url>
+    </license>
+  </licenses>
+
+  <developers>
+    <developer>
+      <id>1</id>
+      <name>Adrian Juhl</name>
+      <email>adrian.juhl@gmail.com</email>
+      <url>https://github.com/adrianjuhl</url>
+      <roles>
+        <role>Developer</role>
+      </roles>
+      <timezone>Australia/Adelaide</timezone>
+    </developer>
+  </developers>
+
+  <scm>
+    <connection>scm:git:github.com:adrianjuhl/adrianjuhl-maven-simple-springboot-camel-application-archetype.git</connection>
+    <developerConnection>scm:git:github.com:adrianjuhl/adrianjuhl-maven-simple-springboot-camel-application-archetype.git</developerConnection>
+    <url>https://github.com/adrianjuhl/adrianjuhl-maven-simple-springboot-camel-application-archetype</url>
+  </scm>
+
+ <distributionManagement>
+    <snapshotRepository>
+      <id>ossrh</id>
+      <url>https://s01.oss.sonatype.org/content/repositories/snapshots/</url>
+    </snapshotRepository>
+    <repository>
+      <id>ossrh</id>
+      <url>https://s01.oss.sonatype.org/service/local/staging/deploy/maven2/</url>
+    </repository>
+  </distributionManagement>
+
+  <properties>
+    <default-generated-project-version>1.0.0-SNAPSHOT</default-generated-project-version>
+    <default-generated-project-name>My springboot camel application name</default-generated-project-name>
+    <default-generated-project-description>My springboot camel application description</default-generated-project-description>
+    <default-generated-project-url>https://github.com/your-name/your-repository</default-generated-project-url>
+    <maven-archetype-plugin-version>3.1.2</maven-archetype-plugin-version> <!-- Override as at 2021-03-01 - Use v3.1.2 because v3.2.0 fails to include the .gitignore file in the jar. -->
+  </properties>
+
+  <build>
+    <resources>
+      <!-- Resources that will be filtered. -->
+      <resource>
+        <directory>${project.basedir}/src/main/resources</directory>
+        <filtering>true</filtering>
+        <includes>
+          <include>generate-project</include>
+          <include>META-INF/maven/archetype-metadata.xml</include>
+        </includes>
+      </resource>
+      <!-- Resources that will not be filtered but included as is. Typically the inverse of the above (i.e. exclude each file that was included above). -->
+      <resource>
+        <directory>${project.basedir}/src/main/resources</directory>
+        <filtering>false</filtering>
+        <excludes>
+          <exclude>generate-project</exclude>
+          <exclude>META-INF/maven/archetype-metadata.xml</exclude>
+        </excludes>
+      </resource>
+    </resources>
+    <testResources>
+      <!-- Test Resources that will be filtered. -->
+      <testResource>
+        <directory>${project.basedir}/src/test/resources</directory>
+        <filtering>true</filtering>
+        <includes>
+          <include>archetype-verification/verify-archetype-capability</include>
+        </includes>
+      </testResource>
+      <!-- Test Resources that will not be filtered but included as is. Typically the inverse of the above (i.e. exclude each test resource file that was included above). -->
+      <testResource>
+        <directory>${project.basedir}/src/test/resources</directory>
+        <filtering>false</filtering>
+        <excludes>
+          <exclude>archetype-verification/verify-archetype-capability</exclude>
+        </excludes>
+      </testResource>
+    </testResources>
+    <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-resources-plugin</artifactId>
+        <configuration>
+          <!-- addDefaultExcludes false is required so that .gitignore gets included in archetypes; see https://issues.apache.org/jira/browse/MRESOURCES-190 -->
+          <addDefaultExcludes>false</addDefaultExcludes>
+          <!-- escapeString is required to allow certain property placeholders (to be precise, certain strings that would be interpreted by maven as property placeholders, for example, shell script variable references) in filtered resources to be preserved. For example, in generate_project.sh, some shell script variables are named the same as maven project properties (e.g. artifactId and version) and so these variable references need to be preserved, which is done by prefixing them with this escapeString. -->
+          <escapeString>\</escapeString>
+       </configuration>
+      </plugin>
+      <plugin>
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>build-helper-maven-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>attach-artifacts</id>
+            <phase>package</phase>
+            <goals>
+              <goal>attach-artifact</goal>
+            </goals>
+            <configuration>
+              <artifacts>
+                <artifact>
+                  <file>target/classes/generate-project</file>
+                  <type>sh</type>
+                  <classifier>generate-project</classifier>
+                </artifact>
+              </artifacts>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+    </plugins>
+  </build>
+</project>

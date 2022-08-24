@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<document xmlns="http://maven.apache.org/XDOC/2.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/XDOC/2.0 http://maven.apache.org/xsd/xdoc-2.0.xsd">
+
+  <properties>
+    <title>Project generation script usage</title>
+  </properties>
+
+  <body>
+
+    <section name="Project generation script usage">
+      <p>This project includes a script that helps to initialize a project using this archetype.</p>
+
+      <p>Project generation script usage:</p>
+
+      <p>
+<pre style="margin-left: 30px; overflow: scroll; white-space: pre;">
+Usage:
+bash &lt;(curl -s "https://github.com/adrianjuhl/${project.version}/generate-project.sh") \
+  --groupId &lt;group-id&gt; --artifactId &lt;artifact-id&gt; \
+  [--version &lt;version&gt;] [--name "&lt;name&gt;"] [--description "&lt;description&gt;"]
+
+Required:
+  --groupId &lt;group-id&gt;           the groupId for the generated project
+  --artifactId &lt;artifact-id&gt;     the artifactId for the generated project
+
+Optional:
+  --version &lt;version&gt;            the version for the generated project, optional, defaults to ${default-generated-project-version}
+  --name "&lt;name&gt;"                the name of the project, optional,
+                                 the value goes in project.name in pom.xml, defaults to "${default-generated-project-name}"
+  --description "&lt;description&gt;"  the description of the project, optional,
+                                 the value goes in project.description in pom.xml, defaults to "${default-generated-project-description}"
+</pre>
+      </p>
+
+      <p>Example project generation:</p>
+
+      <p><pre style="margin-left: 30px; overflow: scroll; white-space: pre;">
+bash &lt;(curl -s "https://github.com/adrianjuhl/${project.version}/generate-project.sh") \
+--groupId example.com \
+--artifactId my-integration-camel-application
+</pre></p>
+
+      <p>The generated project will be contained in a new directory named according to the given artifactId (as per 'mvn archetype:generate').</p>
+
+      <p>The generated project will contain a README.md file that has instructions for running the newly generated springboot camel application, and for basic verification of it.</p>
+    </section>
+
+  </body>
+
+</document>
